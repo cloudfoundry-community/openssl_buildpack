@@ -1,0 +1,36 @@
+#!/bin/bash
+set -euo pipefail
+
+# Variables passed to the supply script
+BUILD_DIR=$1        # Application build directory
+CACHE_DIR=$2        # Buildpack's cache directory
+DEPS_DIR=$3         # Root directory for all buildpack dependencies
+DEPS_IDX=$4         # Index for this buildpack's dependencies
+
+# Calculate the current buildpack's dependency directory
+DEP_DIR="$DEPS_DIR/$DEPS_IDX"
+
+# Get the buildpack's base directory
+BUILDPACK_DIR=$(dirname "$0")/..
+
+# Buildpack banner
+VERSION=$(cat "$BUILDPACK_DIR/VERSION")
+echo "-----> OpenSSL Buildpack version $VERSION"
+echo "-----> Supplying OpenSSL 1.1"
+
+# Create the necessary directories in the dependencies folder
+echo "Creating openssl folder"
+mkdir -p "$DEP_DIR/openssl"
+
+echo "Extracting openssl files"
+tar -xzvf "$BUILDPACK_DIR/dependencies/openssl1.1.1.tar.gz" -C "$DEP_DIR/openssl/"
+
+# Add runtime environment variables to .profile.d/
+mkdir -p "$BUILD_DIR/.profile.d"
+cat <<EOF > "$BUILD_DIR/.profile.d/set_ssl_path.sh"
+#!/bin/bash
+export LD_LIBRARY_PATH="/home/vcap/deps/$DEPS_IDX/openssl/openssl-1.1.1;\$LD_LIBRARY_PATH"
+export CLR_OPENSSL_VERSION_OVERRIDE='1.1'
+EOF
+
+chmod a+x "$BUILD_DIR/.profile.d/set_ssl_path.sh"

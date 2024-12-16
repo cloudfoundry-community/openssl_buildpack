@@ -1,0 +1,6 @@
+# workspace file
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
